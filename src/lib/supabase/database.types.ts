@@ -624,7 +624,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_clinic: {
+        Args: { p_default_locale?: string; p_name: string; p_slug: string }
+        Returns: string
+      }
     }
     Enums: {
       appointment_status: "requested" | "contacted" | "confirmed" | "cancelled"

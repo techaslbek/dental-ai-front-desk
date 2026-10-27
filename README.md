@@ -40,6 +40,8 @@ database credentials.
   Create new ones with `npx supabase migration new <name>`; never edit an
   applied migration.
 - After a migration, regenerate `src/lib/supabase/database.types.ts`.
+- `supabase/tests/create_clinic.sql` covers self-service clinic creation
+  (ownership, slug rules, 3-clinic cap, no anonymous or user-less calls).
 - `supabase/tests/tenant_isolation.sql` proves that a clinic's staff cannot
   read or change another clinic's data, that anonymous visitors have no table
   access, and that only a signed-in staff member can confirm an appointment.
@@ -57,14 +59,25 @@ database credentials.
 
 ### Creating a staff account (development)
 
-1. Supabase dashboard → Authentication → Users → Add user (email + password).
-2. Link the user to a clinic in the SQL editor:
+1. Supabase dashboard → Authentication → Users → Add user (email + password,
+   tick "Auto confirm").
+2. Sign in at `/login`, then **Create clinic** on the dashboard. The creator
+   becomes the clinic's owner (`public.create_clinic`, max 3 per account).
 
-```sql
-insert into public.clinics (slug, name) values ('demo-clinic', 'Demo Clinic') returning id;
-insert into public.clinic_members (clinic_id, user_id, role)
-values ('<clinic id>', '<user id>', 'owner');
-```
+## Clinic admin (Phase 2)
+
+`/dashboard/[slug]` — overview checklist, profile, opening hours, services and
+prices, dentists, FAQs. All content is entered in Uzbek and Russian; the staff
+UI language is switched in the header (cookie `locale`).
+
+- Services, dentists and FAQs share one set of pages
+  (`src/app/dashboard/[slug]/[resource]`); per-section fields and queries are
+  in `src/lib/admin/resources.ts`.
+- Validation lives in `src/lib/validation/clinic.ts` and mirrors the database
+  CHECK constraints; errors are translation keys (`src/lib/i18n/messages`).
+- Every Server Action re-checks the user's clinic membership; writes run under
+  RLS as the signed-in user. Only owners can rename the clinic.
+- Only active items ("Show to the AI assistant") will be used by the assistant.
 
 ## Rules for working on this repo
 
