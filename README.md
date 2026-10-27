@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dental AI Front Desk
 
-## Getting Started
+AI front desk for dental clinics: answers patient questions from clinic-approved
+information (Uzbek and Russian), collects appointment **requests**, and hands
+conversations to staff. Multi-tenant SaaS.
 
-First, run the development server:
+## Stack
+
+Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Supabase (Postgres, Auth, RLS) · Vitest
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env.local   # then fill in values
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Staff accounts are created by an administrator
+(there is no public sign-up); see "Creating a staff account" below.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Local dev server |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript, no emit |
+| `npm test` | Unit tests (Vitest) |
+| `npm run test:db` | Tenant-isolation SQL tests against `SUPABASE_DB_URL` (rolled back, leave no data) |
+| `npm run build` | Production build |
 
-## Learn More
+CI (`.github/workflows/ci.yml`) runs lint, typecheck, unit tests and build on
+every push and pull request. Database tests are not in CI yet because they need
+database credentials.
 
-To learn more about Next.js, take a look at the following resources:
+## Database
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Migrations live in `supabase/migrations/` and are the source of truth.
+  Create new ones with `npx supabase migration new <name>`; never edit an
+  applied migration.
+- After a migration, regenerate `src/lib/supabase/database.types.ts`.
+- `supabase/tests/tenant_isolation.sql` proves that a clinic's staff cannot
+  read or change another clinic's data, that anonymous visitors have no table
+  access, and that only a signed-in staff member can confirm an appointment.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Security model
 
-## Deploy on Vercel
+- Every tenant row has `clinic_id`; row level security limits staff to the
+  clinics in `clinic_members`. Same-clinic foreign keys are composite
+  (`x_id, clinic_id`), so rows can't reference another clinic's data.
+- The `anon` role has no grants. Patient-facing writes will go through server
+  code (Phase 3), never directly from the browser.
+- An appointment request is never "confirmed" by the system: the database
+  rejects confirmation without a signed-in staff member and records who
+  confirmed it.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Creating a staff account (development)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Supabase dashboard → Authentication → Users → Add user (email + password).
+2. Link the user to a clinic in the SQL editor:
+
+```sql
+insert into public.clinics (slug, name) values ('demo-clinic', 'Demo Clinic') returning id;
+insert into public.clinic_members (clinic_id, user_id, role)
+values ('<clinic id>', '<user id>', 'owner');
+```
+
+## Rules for working on this repo
+
+- Never commit secrets. `.env.local` is ignored; `.env.example` lists names only.
+- Never put real patient data in development or tests.
+- Client code may only use the publishable key. The secret/service key is server-only.
