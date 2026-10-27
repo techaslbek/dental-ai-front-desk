@@ -1,5 +1,5 @@
 import "server-only";
-import { formatPriceRange } from "@/lib/format";
+import { formatAmount, formatPriceRange } from "@/lib/format";
 import type { Messages } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/locales";
 import type { createClient } from "@/lib/supabase/server";
@@ -32,6 +32,10 @@ type ResourceDefinition = {
   // id = null builds an empty "create" form; returns null if the row isn't found.
   form: (supabase: Supabase, clinicId: string, id: string | null, t: Messages) => Promise<FieldConfig[] | null>;
 };
+
+// Prices are edited in the same "250 000" form the list shows; the schema
+// accepts the spaces back.
+const amount = (value: number | null | undefined) => (value === null || value === undefined ? "" : formatAmount(value));
 
 // Show the current UI language first, the other one as a subtitle.
 function byLocale(locale: Locale, uz: string | null, ru: string | null) {
@@ -130,7 +134,7 @@ export const resources: Record<ResourceKey, ResourceDefinition> = {
           inputMode: "numeric",
           width: "half",
           placeholder: "250 000",
-          defaultValue: str(row?.price_min),
+          defaultValue: amount(row?.price_min),
         },
         {
           name: "price_max",
@@ -139,7 +143,7 @@ export const resources: Record<ResourceKey, ResourceDefinition> = {
           inputMode: "numeric",
           width: "half",
           placeholder: "400 000",
-          defaultValue: str(row?.price_max),
+          defaultValue: amount(row?.price_max),
           hint: t.services.priceHint,
         },
         {

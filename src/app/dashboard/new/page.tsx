@@ -3,12 +3,22 @@ import { PageHeader } from "@/components/admin/form-parts";
 import { ResourceForm } from "@/components/admin/resource-form";
 import { getT } from "@/lib/i18n/server";
 import { createClinic } from "../actions";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/admin/page-skeleton";
 
 export const metadata: Metadata = {
   title: "Yangi klinika · Новая клиника",
 };
 
-export default async function NewClinicPage() {
+export default function NewClinicPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <NewClinicPageContent />
+    </Suspense>
+  );
+}
+
+async function NewClinicPageContent() {
   const { locale, t } = await getT();
 
   return (

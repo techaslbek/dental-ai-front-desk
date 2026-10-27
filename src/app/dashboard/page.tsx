@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/admin/form-parts";
 import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/admin/page-skeleton";
 
 export const metadata: Metadata = {
   title: "Boshqaruv paneli · Панель",
@@ -11,7 +13,15 @@ export const metadata: Metadata = {
 
 const MAX_OWNED_CLINICS = 3;
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <DashboardPageContent />
+    </Suspense>
+  );
+}
+
+async function DashboardPageContent() {
   const { t } = await getT();
   const supabase = await createClient();
 

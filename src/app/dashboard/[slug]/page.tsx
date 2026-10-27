@@ -5,8 +5,18 @@ import { getClinicContext } from "@/lib/admin/clinic-context";
 import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { readOpeningHours } from "@/lib/validation/clinic";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/admin/page-skeleton";
 
-export default async function ClinicOverviewPage({ params }: PageProps<"/dashboard/[slug]">) {
+export default function ClinicOverviewPage(props: PageProps<"/dashboard/[slug]">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <ClinicOverviewPageContent {...props} />
+    </Suspense>
+  );
+}
+
+async function ClinicOverviewPageContent({ params }: PageProps<"/dashboard/[slug]">) {
   const { slug } = await params;
   const clinic = await getClinicContext(slug);
   if (!clinic) notFound();

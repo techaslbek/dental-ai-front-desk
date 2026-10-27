@@ -7,8 +7,18 @@ import { isResourceKey, resources } from "@/lib/admin/resources";
 import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { deleteResource } from "../../actions";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/admin/page-skeleton";
 
-export default async function ResourceListPage({ params }: PageProps<"/dashboard/[slug]/[resource]">) {
+export default function ResourceListPage(props: PageProps<"/dashboard/[slug]/[resource]">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <ResourceListPageContent {...props} />
+    </Suspense>
+  );
+}
+
+async function ResourceListPageContent({ params }: PageProps<"/dashboard/[slug]/[resource]">) {
   const { slug, resource } = await params;
   if (!isResourceKey(resource)) notFound();
   const clinic = await getClinicContext(slug);

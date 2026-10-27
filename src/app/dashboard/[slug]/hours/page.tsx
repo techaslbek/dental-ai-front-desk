@@ -6,8 +6,18 @@ import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { readOpeningHours } from "@/lib/validation/clinic";
 import { saveHours } from "../../actions";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/admin/page-skeleton";
 
-export default async function HoursPage({ params }: PageProps<"/dashboard/[slug]/hours">) {
+export default function HoursPage(props: PageProps<"/dashboard/[slug]/hours">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <HoursPageContent {...props} />
+    </Suspense>
+  );
+}
+
+async function HoursPageContent({ params }: PageProps<"/dashboard/[slug]/hours">) {
   const { slug } = await params;
   const clinic = await getClinicContext(slug);
   if (!clinic) notFound();

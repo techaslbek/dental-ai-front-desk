@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { initialFormState, type FormState } from "@/lib/admin/form-state";
 import type { ErrorKey } from "@/lib/i18n";
 import { DAYS, type Day, type OpeningHours } from "@/lib/validation/clinic";
@@ -25,15 +25,23 @@ type Props = {
 export function HoursForm({ action, hours, isSet, errorMessages, labels }: Props) {
   const [state, formAction, pending] = useActionState(action, initialFormState);
   const errors = state.status === "error" ? state.fieldErrors : {};
-  const submitted = state.status === "error" ? state.values : undefined;
 
   // Closed days are tracked in state so their time inputs can be disabled.
   const [closed, setClosed] = useState<Record<Day, boolean>>(() =>
     Object.fromEntries(DAYS.map((d) => [d, isSet && hours[d].length === 0])) as Record<Day, boolean>,
   );
 
+  // Submit manually instead of via the `action` prop: React resets forms after
+  // an action, which would untick the controlled "closed" boxes while their
+  // state stays true, so the next save would send a closed day without times.
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => formAction(formData));
+  }
+
   return (
-    <form action={formAction} noValidate className="space-y-6">
+    <form onSubmit={onSubmit} noValidate className="space-y-6">
       {state.status === "error" && state.formError ? (
         <FormMessage tone="error">{errorMessages[state.formError]}</FormMessage>
       ) : null}
@@ -42,8 +50,8 @@ export function HoursForm({ action, hours, isSet, errorMessages, labels }: Props
       <fieldset className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
         {DAYS.map((day) => {
           const interval = hours[day][0];
-          const openValue = submitted?.[`${day}_open`] ?? interval?.open ?? "09:00";
-          const closeValue = submitted?.[`${day}_close`] ?? interval?.close ?? "18:00";
+          const openValue = interval?.open ?? "09:00";
+          const closeValue = interval?.close ?? "18:00";
           const openError = errors[`${day}_open`];
           const closeError = errors[`${day}_close`];
           return (
@@ -55,6 +63,7 @@ export function HoursForm({ action, hours, isSet, errorMessages, labels }: Props
                   name={`${day}_closed`}
                   checked={closed[day]}
                   onChange={(e) => setClosed((c) => ({ ...c, [day]: e.target.checked }))}
+                  aria-label={`${labels.days[day]}: ${labels.closed}`}
                   className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
                 />
                 {labels.closed}

@@ -6,8 +6,18 @@ import { str, type FieldConfig } from "@/lib/admin/fields";
 import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { saveProfile } from "../../actions";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/admin/page-skeleton";
 
-export default async function ProfilePage({ params }: PageProps<"/dashboard/[slug]/profile">) {
+export default function ProfilePage(props: PageProps<"/dashboard/[slug]/profile">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <ProfilePageContent {...props} />
+    </Suspense>
+  );
+}
+
+async function ProfilePageContent({ params }: PageProps<"/dashboard/[slug]/profile">) {
   const { slug } = await params;
   const clinic = await getClinicContext(slug);
   if (!clinic) notFound();
