@@ -15,8 +15,10 @@
     "node": ">=24"
   },
   "dependencies": {
+    "@ai-sdk/openai": "4.0.103",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.118.0",
+    "ai": "7.0.154",
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",

@@ -624,9 +624,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_rate_limit: {
+        Args: { p_key: string; p_limit: number; p_window_seconds: number }
+        Returns: boolean
+      }
       create_clinic: {
         Args: { p_default_locale?: string; p_name: string; p_slug: string }
         Returns: string
+      }
+      record_usage: {
+        Args: {
+          p_clinic_id: string
+          p_conversations: number
+          p_input_tokens: number
+          p_messages: number
+          p_output_tokens: number
+        }
+        Returns: undefined
       }
     }
     Enums: {
